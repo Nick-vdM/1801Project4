@@ -25,7 +25,7 @@
  * - Uniform cost Search: priority queue
  *
  * 1 mark: implementing required data structures
- * 2 marks: implementing one Search algorithm
+ * 2 marks: implementing one Search xFirstSearchAlgorithm
  * 1 mark: statistics collected
  * 1 mark: other two algorithms
  */
@@ -33,12 +33,13 @@
 template<typename T>
 class Search {
 public:
-    Search(int source, int target)
+    Search(int source, int target, std::string fileLocation)
             : source(source), target(target) {
-        std::ifstream ifs("graph100.txt");
+        std::ifstream ifs(fileLocation);
         ifs >> nodeCount;
         for (int i = 0; i < nodeCount; i++) {
             matrix.emplace_back();
+            matrix[i].reserve(nodeCount);
             for (int j = 0; j < nodeCount; j++) {
                 matrix[i].push_back(0);
             }
@@ -51,35 +52,20 @@ public:
         }
     }
 
-
     void doSearch() {
         clock_t startClock = clock();
-        std::vector<int> parent(7, -1);
-        std::vector<int> cost(nodeCount, std::numeric_limits<short>::max());
+        std::vector<int> parent(nodeCount, -1);
+        std::vector<int> cost(nodeCount, std::numeric_limits<int>::max());
         cost[source] = 0;
-
         heap.push(source);
-        int current; // Don't replace the space over and over
-        while (!heap.empty()) {
-            current =  popNodeFromHeap(heap);
-            nodesPopped++;
 
-            if (current != target) {
-                for (int neigh = 0; neigh < nodeCount; neigh++) {
-                    if (matrix[current][neigh] == 0) continue; // Skip no links
-                    if (cost[neigh] > cost[current] + matrix[current][neigh]) {
-                        cost[neigh] = cost[current] + matrix[current][neigh];
-                        parent[neigh] = current;
-                        heap.push(neigh);
-                        nodesPushed++;
-                    }
-                }
-            }
-        }
+        xFirstSearchAlgorithm(parent, cost);
+
         shortestPathLength = cost[target];
         setShortestPath(parent);
         timeTaken = double((clock() - startClock)) / CLOCKS_PER_SEC;
     }
+
 
     void setShortestPath(std::vector<int> &parent) {
         // The parent is stored such from the destination the index points
@@ -111,23 +97,38 @@ private:
         }
     }
 
-    int popNodeFromHeap(std::queue<int> & queueMode) {
-        //Due to structures having different pop syntaxes a switch is needed here
-        auto value = queueMode.front();
-        heap.pop();
-        return value;
+    //Due to someone defining these functions
+    int popNodeFromHeap(std::queue<int> &queueMode) {
+        return queueMode.front();
     }
 
-    int popNodeFromHeap(std::stack<int> & stackMode){
-        auto value = stackMode.top();
-        heap.pop();
-        return value;
+    int popNodeFromHeap(std::stack<int> &stackMode) {
+        return stackMode.top();
     }
 
-    int popNodeFromHeap(std::priority_queue<int> & priorityQueueMode){
-        auto value = priorityQueueMode.top();
-        heap.pop();
-        return value;
+    int popNodeFromHeap(std::priority_queue<int> &priorityQueueMode) {
+        return priorityQueueMode.top();
+    }
+
+    void xFirstSearchAlgorithm(std::vector<int> &parent, std::vector<int> &cost) {
+        int current; // Don't replace the space over and over
+        while (!heap.empty()) {
+            current = popNodeFromHeap(heap);
+            heap.pop();
+            nodesPopped++;
+
+            if (current != target) {
+                for (int neigh = 0; neigh < nodeCount; neigh++) {
+                    if (matrix[current][neigh] == 0) continue; // Skip no links
+                    if (cost[neigh] > cost[current] + matrix[current][neigh]) {
+                        cost[neigh] = cost[current] + matrix[current][neigh];
+                        parent[neigh] = current;
+                        heap.push(neigh);
+                        nodesPushed++;
+                    }
+                }
+            }
+        }
     }
 
     int source;
@@ -146,17 +147,23 @@ private:
 };
 
 
-int main() {
+int main(int argc, char ** argv) {
+    std::string file;
+    if(argv[1]){
+        file = std::string(argv[1]);
+    } else{
+        file = "slideMatrix.txt";
+    }
     std::cout << "==============STACK============" << std::endl;
-    Search<std::stack<int>> search_s{0, 4};
+    Search<std::stack<int>> search_s{0, 4, file};
     search_s.doSearch();
     search_s.printData();
     std::cout << "==============QUEUE============" << std::endl;
-    Search<std::queue<int>> search_q{0, 4};
+    Search<std::queue<int>> search_q{0, 4, file};
     search_q.doSearch();
     search_q.printData();
-    std::cout << "==============PRIORITY QUEUE============" << std::endl;
-    Search<std::priority_queue<int>> search_pq{0, 4};
+    std::cout << "=========PRIORITY QUEUE=========" << std::endl;
+    Search<std::priority_queue<int>> search_pq{0, 4, file};
     search_pq.doSearch();
     search_pq.printData();
 }

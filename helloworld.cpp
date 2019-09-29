@@ -5,6 +5,5 @@
 
 int main(){
     std::cout << "hello world" << std::endl;
-    std::string test;
-    std::cin >> test;
+    while(true){}
 }

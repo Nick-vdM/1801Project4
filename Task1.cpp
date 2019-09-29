@@ -9,10 +9,9 @@
 #include <map>
 #include <cstring>
 #include <unordered_map>
-#include <limits>
-#include <fstream>
 #include <algorithm>
 #include <iomanip>
+#include <fstream>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
@@ -21,15 +20,9 @@
  * ORDER OF NOTATION SOURCE:
  *  https://github.com/gibsjose/cpp-cheat-sheet/blob/master/Data%20Structures%20and%20Algorithms.md#15-map-stdmap-and-stdunordered_map
  * All notations for structures of structure complexities were taken from there
+ * MAP VS UNORDERED MAP ON LARGE SETS OF DATA:
+ * https://pdfs.semanticscholar.org/a5a2/5b5ea9c8219fd43b3de87d14df31c0e89b23.pdf
  *
- * =============================Structures & Justifications====================================
- * The task can be broken down into three main steps:
- *      1. Loading in the data
- *      2. Sorting the data
- *      3. Printing sorted data
- * Notice that 1 & 2 are seperate - sorting the data as its inserted is typically slower than sorting it with a
- * quick sort at the end.
- *      Containers decisions should be based around these tasks.
  * ======LOADING IN DATA========
  * While data is being initially loaded in, it does not have to be in any specific order. However, multiple
  * lines contain the same student, which means a student must be tested whether they already exist or not, and
@@ -43,30 +36,6 @@
  * this does not actually impact what the iterators point to and therefore it should be fine. Another negative thing is
  * that it uses up more memory than a map to store things, however, the insert and access time being O(1) is more
  * valuable.
- * ----------MAIN STORAGE CONTAINER: unordered_map : INSERT: O(1) ; O(1) ; O(1)
- * =====SORTING DATA============
- * Before deciding on the container, it is probably a better decision to pick the container based on
- * the algorithm begin used. Firstly, a few properties should be chosen:
- *      - The data size is not that big ( 200 elements per container at most ; 8 bytes per iterator
- *          = 8*200 = 1600 ~= 1.56 kilobytes per program)
- *      - The data will be completely scrambled - no sections will be partially sorted
- *      - Average time is the most important (because the sort will be ran six times)
- * The four main sorting algorithms that will be inspected are:
- *      ALGORITHM   |   AVERAGE TIME    |   WORST TIME  |   MEMORY      |   PREFERRED CONTAINER
- *      quick       |   n*log(n)        |   n^2         |   O(log(n))   |   Array
- *      Merge       |   n*log(n)        |   n*log(n)    |   O(n)        |   List
- *      Heap        |   n*log(n)        |   n*log(n)    |   O(1)        |   Heap
- *      Introsort   |   n*log(n)        |   n*log(n)    |   O(log(n))   |   Heap
- * While heap and introsort are both arguably better options than quick sort, using a heap structure will
- * add complexity due to the iterator requiring a more complicated access time. Additionally, O(n) storage for the
- * merge sort is an excessive amount - it'd likely be better to create a heap sort structure and tank the print speed.
- *      Quick sort is the most attractive option. It simplifies future printing steps, its average time matches everything
- * and its memory usage is fairly light (log(1600) ~= 10.6 bytes). The main downside being faced is the worst time,
- * however, the focus here is the average time as it will have to be sorted several times.
- * --------Algorithm: Quick sort
- * Note however, if the size is being based off of the size of the data, it requires a constexpr to initialise the
- * size of an array. As such, a vector will have to be used that gets forced into a specific size.
- * --------Data structures: Vectors
  */
 
 //Instead of declaring this over and over just use this
@@ -89,7 +58,7 @@ void loadInData(mainDataStruct &studentData) {
     std::string studentName;
     std::string subject;
     std::string grade;
-    std::ifstream ifs("data.txt");
+    std::ifstream ifs("bigData.txt");
     //Until end of input
     while (ifs.peek() != std::char_traits<char>::eof()) {
         ifs >> studentName >> subject >> grade;
@@ -102,7 +71,7 @@ void loadInData(mainDataStruct &studentData) {
         }
     }
     for (auto student = studentData.begin(); student != studentData.end(); student++) {
-        student->second[4] = student->first[0] + student->first[1] + student->first[2] + student->first[3];
+        student->second[4] = student->second[0] + student->second[1] + student->second[2] + student->second[3];
     }
 }
 
@@ -145,15 +114,26 @@ void printData(std::vector<mainDataStruct::iterator> &toPrint) {
 
 void printDataUntil(std::vector<mainDataStruct::iterator> &toPrint, size_t value, size_t index) {
     for (auto i : toPrint) {
-        if (i->second[index] < value) {
+        if (i->second[index] <= value) {
             break;
         }
         printStudent(i);
     }
 }
 
+int countStudentsWithGradeAbove(std::vector<mainDataStruct::iterator> &toPrint, size_t value, size_t index) {
+    int count{};
+    for (auto i : toPrint) {
+        if (i->second[index] <= value) {
+            break;
+        }
+        count++;
+    }
+    return count;
+}
+
 int main() {
-    //For debugging purposes use this:
+    clock_t startTime = clock();
 
     mainDataStruct studentData{};
     loadInData(studentData);
@@ -186,10 +166,12 @@ int main() {
     }
     std::sort(sortedData[5].begin(), sortedData[5].end(), CompareKeys());
 
+    std::cout << "Time to insert and sort: " << double(clock() - startTime) / CLOCKS_PER_SEC << "s" << std::endl;
+
     std::string instruction;
     size_t instructionNum;
     while (true) {
-        std::cout  << ">>>>";
+        std::cout << ">>>>";
         std::cin >> instruction;
         for (int i = 0; i < 255 && instruction[i] != '\0'; i++) {
             instruction[i] = ::tolower(instruction[i]);
@@ -221,14 +203,36 @@ int main() {
         } else if (instruction == "totaluntil") {
             std::cin >> instructionNum;
             printDataUntil(sortedData[4], instructionNum, 4);
+        } else if (instruction == "biologycount") {
+            std::cin >> instructionNum;
+            std::cout << countStudentsWithGradeAbove(sortedData[0], instructionNum, 0)
+                      << " students have a grade above that" << std::endl;
+        } else if (instruction == "mathscount") {
+            std::cin >> instructionNum;
+            std::cout << countStudentsWithGradeAbove(sortedData[1], instructionNum, 1)
+                      << " students have a grade above that" << std::endl;
+        } else if (instruction == "chemistrycount") {
+            std::cin >> instructionNum;
+            std::cout << countStudentsWithGradeAbove(sortedData[2], instructionNum, 2)
+                      << " students have a grade above that" << std::endl;
+        } else if (instruction == "physicscount") {
+            std::cin >> instructionNum;
+            std::cout << countStudentsWithGradeAbove(sortedData[2], instructionNum, 3)
+                      << " students have a grade above that" << std::endl;
+        } else if (instruction == "totalcount") {
+            std::cin >> instructionNum;
+            std::cout << countStudentsWithGradeAbove(sortedData[3], instructionNum, 4)
+                      << " students have a grade above that" << std::endl;
         } else if (instruction == "find") {
             std::cin >> instruction;
             auto student = studentData.find(instruction);
+            if(student == studentData.end()){
+                studentData[instruction] = std::array<size_t, 5>();
+                student = studentData.find(instruction);
+            }
             printStudent(student);
-        } else if (instruction == "time") {
-
-        } else if (instruction == "memory") {
-
+        } else if (instruction == "exit") {
+            break;
         } else {
             std::cout << "Sorry, that's an unrecognised command" << std::endl;
             std::cout << "you entered: " << instruction << std::endl;
