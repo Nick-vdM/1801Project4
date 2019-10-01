@@ -30,7 +30,6 @@
  * 1 mark: other two algorithms
  */
 
-template<typename T>
 class Search {
 public:
     Search(int source, int target, std::string fileLocation)
@@ -45,6 +44,11 @@ public:
             }
         }
 
+        // This is the biggest bottleneck in the program; it takes ~33% of the program to use the
+        // >> operator. The simplest way to make it faster is to redirect to std::cin and use
+        // scanf (fscanf is actually slower than ifs), which is about ~3x as fast. However, that
+        // comes with other downsides (less secure, probably more readable to use ifs >>)
+        // and other optimisations are too complex . As such, this is accepted.
         for (int i = 0; i < nodeCount; i++) {
             for (int j = 0; j < nodeCount; j++) {
                 ifs >> matrix[i][j];
@@ -52,14 +56,14 @@ public:
         }
     }
 
+    template<class T>
     void doSearch() {
         clock_t startClock = clock();
         std::vector<int> parent(nodeCount, -1);
         std::vector<int> cost(nodeCount, std::numeric_limits<int>::max());
         cost[source] = 0;
-        heap.push(source);
 
-        xFirstSearchAlgorithm(parent, cost);
+        xFirstSearchAlgorithm<T>(parent, cost);
 
         shortestPathLength = cost[target];
         setShortestPath(parent);
@@ -110,8 +114,11 @@ private:
         return priorityQueueMode.top();
     }
 
+    template<class T>
     void xFirstSearchAlgorithm(std::vector<int> &parent, std::vector<int> &cost) {
         int current; // Don't replace the space over and over
+        T heap;
+        heap.push(source);
         while (!heap.empty()) {
             current = popNodeFromHeap(heap);
             heap.pop();
@@ -135,7 +142,6 @@ private:
     int target;
     int nodeCount;
 
-    T heap;
     std::vector<std::vector<int>> matrix;
 
     std::vector<int> shortestPath;
@@ -147,23 +153,23 @@ private:
 };
 
 
-int main(int argc, char ** argv) {
+int main(int argc, char **argv) {
     std::string file;
-    if(argv[1]){
+    if (argv[1]) {
         file = std::string(argv[1]);
-    } else{
+    } else {
         file = "slideMatrix.txt";
     }
-    std::cout << "==============STACK============" << std::endl;
-    Search<std::stack<int>> search_s{0, 4, file};
-    search_s.doSearch();
-    search_s.printData();
-    std::cout << "==============QUEUE============" << std::endl;
-    Search<std::queue<int>> search_q{0, 4, file};
-    search_q.doSearch();
-    search_q.printData();
-    std::cout << "=========PRIORITY QUEUE=========" << std::endl;
-    Search<std::priority_queue<int>> search_pq{0, 4, file};
-    search_pq.doSearch();
-    search_pq.printData();
+    std::cout << "==============Depth First Search============" << std::endl;
+    Search search{0, 4, file};
+    search.doSearch<std::stack<int>>();
+    search.printData();
+    std::cout << "==============Breadth First Search============" << std::endl;
+    search = Search(0, 4, file);
+    search.doSearch<std::stack<int>>();
+    search.printData();
+    std::cout << "=========Uniform First Search=========" << std::endl;
+    search = Search(0, 4, file);
+    search.doSearch<std::stack<int>>();
+    search.printData();
 }
