@@ -64,7 +64,7 @@ void loadInData(mainDataStruct &studentData) {
     std::string studentName;
     std::string subject;
     std::string grade;
-    std::ifstream ifs("data.txt");
+    std::ifstream ifs("bigData.txt");
     //Until end of input
     while (ifs.peek() != std::char_traits<char>::eof()) {
         ifs >> studentName >> subject >> grade;
@@ -133,7 +133,7 @@ class compareGrade {
 public:
     explicit compareGrade(int index) : index(index) {}
 
-    inline bool operator()(mainDataStruct::iterator &i, int & value) const {
+    inline bool operator()(mainDataStruct::iterator &i, int const & value) const {
         return i->second[index] > value;
     }
 
